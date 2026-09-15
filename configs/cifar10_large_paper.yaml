@@ -1,0 +1,37 @@
+# Paper-style CIFAR-10 large Diff Logic Net: 5 layers × 256000 neurons (paper # Param. = 1280000).
+# Input: 95232-dim binary embedding (31 thresholds per channel at i/32, i=1..31). See src/data/cifar10.py.
+
+model:
+  num_layers: 5
+  neurons_per_layer: 256000
+  input_dim: 95232
+  num_classes: 10
+  gate_init: "normal"
+
+data:
+  dataset: "cifar10"
+  cifar10_embedding: "paper_large"
+  data_dir: "data"
+  val_split: 5000
+  data_seed: 42
+
+training:
+  optimizer: "adam"
+  lr: 0.01
+  batch_size: 100
+  max_epochs: 200
+  device: "cuda"
+
+output:
+  # Paper aggregation: tau = 1 / 0.01
+  tau: 100.0
+  beta: 0.0
+
+logging:
+  evaluate_test_during_training: false
+  log_soft_hard_consistency: true
+  consistency_interval: 10
+
+checkpoint:
+  save_dir: "checkpoints/cifar10_large_paper"
+  seed: 0

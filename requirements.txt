@@ -1,0 +1,12 @@
+# PyTorch：建议用官方索引安装 GPU 版本（与驱动 CUDA 匹配），例如 CUDA 12.4：
+#   pip install torch==2.5.1 torchvision==0.20.1 --index-url https://download.pytorch.org/whl/cu124
+# CPU 版可仅用下面两行（或从 https://pytorch.org/get-started/locally/ 复制命令）。
+#
+# 不要写 torch>=2.0 且不封顶：pip 会拉最新 torch（如 2.11），此时部分环境/镜像上
+# 可能还没有对应 torchvision 轮子，会出现 “No matching distribution found for torchvision”。
+
+torch==2.5.1
+torchvision==0.20.1
+pyyaml>=6.0
+pytest>=7.0
+matplotlib>=3.7

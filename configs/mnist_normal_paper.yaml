@@ -1,0 +1,36 @@
+# Paper-style MNIST “normal” Diff Logic Net: 6 layers × 64000 neurons (384k gate logits).
+# Model math, connectivity, 16 gates, and output grouping match the rest of the repo.
+
+model:
+  num_layers: 6
+  neurons_per_layer: 64000
+  input_dim: 784
+  num_classes: 10
+  gate_init: "normal"
+
+data:
+  dataset: "mnist"
+  binarize_threshold: 0.5
+  val_split: 5000
+  data_seed: 42
+
+training:
+  optimizer: "adam"
+  lr: 0.01
+  batch_size: 100
+  max_epochs: 200
+  device: "cuda"
+
+output:
+  # Paper aggregation: tau = 1 / 0.03
+  tau: 33.333333333333336
+  beta: 0.0
+
+logging:
+  evaluate_test_during_training: false
+  log_soft_hard_consistency: true
+  consistency_interval: 10
+
+checkpoint:
+  save_dir: "checkpoints/paper_normal"
+  seed: 0

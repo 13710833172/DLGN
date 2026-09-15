@@ -1,0 +1,353 @@
+#!/usr/bin/env python3
+"""
+从一次训练产生的 run 目录（train_log.csv + layer_stats.csv）绘制曲线。
+
+默认生成三张图到 figures/：
+  - <run_name>_train_val.png  — train_loss、val_soft/val_hard、val_gap
+  - <run_name>_layers.png    — 各层 mean_gate_entropy、mean_max_gate_probability、activation_mean/std
+  - <run_name>_gates.png     — 各层离散逻辑门分布（MNIST-small: 2x3 子图）
+
+用法:
+  python scripts/plot_training_log.py logs/run_20260413_033903
+  python scripts/plot_training_log.py logs/run_20260413_033903/train_log.csv
+  python scripts/plot_training_log.py logs/run_20260413_033903 -o figures/myexp
+"""
+
+from __future__ import annotations
+
+import argparse
+import csv
+import json
+import math
+import sys
+from collections import defaultdict
+from pathlib import Path
+
+import matplotlib.pyplot as plt
+import torch
+
+ROOT = Path(__file__).resolve().parent.parent
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
+
+from src.models.logic_net import DiffLogicNet
+
+# 16 operators in fixed order used across the project.
+GATE_LABELS = [
+    "0",
+    "A and B",
+    "not(A=>B)",
+    "A",
+    "not(B=>A)",
+    "B",
+    "A xor B",
+    "A or B",
+    "not(A or B)",
+    "not(A xor B)",
+    "not(B)",
+    "B=>A",
+    "not(A)",
+    "A=>B",
+    "not(A and B)",
+    "1",
+]
+
+# Fixed per-formula colors (same operator id = same color across all layers).
+GATE_COLORS = list(plt.cm.tab20.colors[:16])
+
+
+def resolve_run_paths(arg: Path) -> tuple[Path, Path, Path, str]:
+    """返回 (train_log.csv, layer_stats.csv, run_dir, run_name)."""
+    arg = arg.resolve()
+    if arg.is_file():
+        if arg.name != "train_log.csv":
+            raise SystemExit(f"若传入文件，须为 train_log.csv，收到: {arg}")
+        run_dir = arg.parent
+        run_name = run_dir.name
+        return arg, run_dir / "layer_stats.csv", run_dir, run_name
+    if arg.is_dir():
+        tl = arg / "train_log.csv"
+        ls = arg / "layer_stats.csv"
+        run_name = arg.name
+        return tl, ls, arg, run_name
+    raise SystemExit(f"路径不存在: {arg}")
+
+
+def load_train_log(path: Path) -> dict[str, list]:
+    if not path.is_file():
+        raise SystemExit(f"缺少 train_log.csv: {path}")
+    cols = [
+        "epoch",
+        "train_loss",
+        "train_acc",
+        "val_soft_acc",
+        "val_hard_acc",
+        "val_gap",
+        "lr",
+        "epoch_time",
+    ]
+    data: dict[str, list] = {c: [] for c in cols}
+    with open(path, newline="", encoding="utf-8") as f:
+        reader = csv.DictReader(f)
+        for row in reader:
+            for c in cols:
+                if c not in row:
+                    raise KeyError(f"train_log 缺少列 {c!r}，实际: {reader.fieldnames}")
+                data[c].append(float(row[c]))
+    return data
+
+
+def load_layer_stats(path: Path) -> dict[int, dict[str, list]]:
+    """layer_idx -> {epoch, mean_gate_entropy, ...} 等时间序列。"""
+    if not path.is_file():
+        return {}
+    series: dict[int, dict[str, list]] = defaultdict(
+        lambda: {
+            "epoch": [],
+            "mean_gate_entropy": [],
+            "mean_max_gate_probability": [],
+            "activation_mean": [],
+            "activation_std": [],
+        }
+    )
+    with open(path, newline="", encoding="utf-8") as f:
+        reader = csv.DictReader(f)
+        expected = {
+            "epoch",
+            "layer_idx",
+            "mean_gate_entropy",
+            "mean_max_gate_probability",
+            "activation_mean",
+            "activation_std",
+        }
+        if reader.fieldnames is None or not expected.issubset(set(reader.fieldnames)):
+            raise SystemExit(f"layer_stats 列不符合预期: {reader.fieldnames}")
+        for row in reader:
+            li = int(row["layer_idx"])
+            s = series[li]
+            s["epoch"].append(int(row["epoch"]))
+            s["mean_gate_entropy"].append(float(row["mean_gate_entropy"]))
+            s["mean_max_gate_probability"].append(float(row["mean_max_gate_probability"]))
+            s["activation_mean"].append(float(row["activation_mean"]))
+            s["activation_std"].append(float(row["activation_std"]))
+    for li in series:
+        zipped = sorted(
+            zip(
+                series[li]["epoch"],
+                series[li]["mean_gate_entropy"],
+                series[li]["mean_max_gate_probability"],
+                series[li]["activation_mean"],
+                series[li]["activation_std"],
+            ),
+            key=lambda t: t[0],
+        )
+        series[li] = {
+            "epoch": [t[0] for t in zipped],
+            "mean_gate_entropy": [t[1] for t in zipped],
+            "mean_max_gate_probability": [t[2] for t in zipped],
+            "activation_mean": [t[3] for t in zipped],
+            "activation_std": [t[4] for t in zipped],
+        }
+    return dict(series)
+
+
+def load_gate_ids_per_layer(run_dir: Path) -> list[torch.Tensor] | None:
+    """Try to get per-layer gate ids for distribution plotting."""
+    # Preferred: run-local discrete bundle generated by train.py table4 summary.
+    local_bundle = run_dir / "discrete_bundle_table4.pt"
+    if local_bundle.is_file():
+        payload = torch.load(local_bundle, map_location="cpu", weights_only=False)
+        return [g.long().cpu() for g in payload["gate_ids_per_layer"]]
+
+    # Fallback 1: run_summary points to a bundle.
+    run_summary = run_dir / "run_summary.json"
+    if run_summary.is_file():
+        with open(run_summary, "r", encoding="utf-8") as f:
+            info = json.load(f)
+        maybe_bundle = info.get("discrete_bundle_for_space")
+        if maybe_bundle:
+            p = Path(maybe_bundle)
+            if p.is_file():
+                payload = torch.load(p, map_location="cpu", weights_only=False)
+                return [g.long().cpu() for g in payload["gate_ids_per_layer"]]
+
+        # Fallback 2: derive from best checkpoint.
+        maybe_ckpt = info.get("best_checkpoint")
+        if maybe_ckpt:
+            ckpt_path = Path(maybe_ckpt)
+            if ckpt_path.is_file():
+                ckpt = torch.load(ckpt_path, map_location="cpu", weights_only=False)
+                cfg = ckpt["config"]
+                mcfg = cfg["model"]
+                conn_seed = int(ckpt.get("connectivity_seed", cfg.get("checkpoint", {}).get("seed", 0)))
+                model = DiffLogicNet(
+                    input_dim=int(mcfg["input_dim"]),
+                    num_layers=int(mcfg["num_layers"]),
+                    neurons_per_layer=int(mcfg["neurons_per_layer"]),
+                    connectivity_seed=conn_seed,
+                    gate_init=str(mcfg.get("gate_init", "normal")),
+                )
+                model.load_state_dict(ckpt["model_state_dict"], strict=True)
+                return [g.long().cpu() for g in model.discretized_gate_ids()]
+
+    return None
+
+
+def plot_train_val(data: dict[str, list], title: str, out_path: Path) -> None:
+    epochs = data["epoch"]
+    fig, axes = plt.subplots(3, 1, figsize=(9, 8), sharex=True, constrained_layout=True)
+
+    ax0 = axes[0]
+    ax0.plot(epochs, data["train_loss"], color="#1f77b4", linewidth=1.2)
+    ax0.set_ylabel("Train loss")
+    ax0.set_title("Training loss")
+    ax0.grid(True, alpha=0.3)
+
+    ax1 = axes[1]
+    ax1.plot(epochs, data["val_soft_acc"], label="Val soft acc", color="#2ca02c", linewidth=1.0)
+    ax1.plot(epochs, data["val_hard_acc"], label="Val hard acc", color="#d62728", linewidth=1.0)
+    ax1.set_ylabel("Accuracy")
+    vmin = min(min(data["val_soft_acc"]), min(data["val_hard_acc"]))
+    ax1.set_ylim(max(0.0, vmin - 0.02), 1.0)
+    ax1.legend(loc="lower right", fontsize=9)
+    ax1.set_title("Validation accuracy (soft vs hard)")
+    ax1.grid(True, alpha=0.3)
+
+    ax2 = axes[2]
+    ax2.plot(epochs, data["val_gap"], color="#9467bd", linewidth=1.0)
+    ax2.set_xlabel("Epoch")
+    ax2.set_ylabel("Val soft - val hard")
+    ax2.set_title("Validation discretization gap")
+    ax2.axhline(0.0, color="gray", linestyle="--", linewidth=0.8, alpha=0.6)
+    ax2.grid(True, alpha=0.3)
+
+    if title:
+        fig.suptitle(title, fontsize=12)
+
+    out_path.parent.mkdir(parents=True, exist_ok=True)
+    fig.savefig(out_path, dpi=150)
+    plt.close(fig)
+    print(f"Saved: {out_path.resolve()}")
+
+
+def plot_layer_diagnostics(
+    layer_data: dict[int, dict[str, list]],
+    title: str,
+    out_path: Path,
+) -> None:
+    if not layer_data:
+        print("Skip layer diagnostics figure (no layer_stats.csv)")
+        return
+
+    fig, axes = plt.subplots(2, 2, figsize=(10, 8), sharex=True, constrained_layout=True)
+    metrics = [
+        ("mean_gate_entropy", "Mean gate entropy"),
+        ("mean_max_gate_probability", "Mean max gate probability"),
+        ("activation_mean", "Activation mean"),
+        ("activation_std", "Activation std"),
+    ]
+    colors = plt.cm.tab10.colors
+    layer_ids = sorted(layer_data.keys())
+
+    for ax, (key, ylabel) in zip(axes.flat, metrics):
+        for j, li in enumerate(layer_ids):
+            s = layer_data[li]
+            ax.plot(
+                s["epoch"],
+                s[key],
+                label=f"L{li}",
+                color=colors[j % len(colors)],
+                linewidth=1.0,
+            )
+        ax.set_ylabel(ylabel)
+        ax.grid(True, alpha=0.3)
+        ax.legend(loc="best", fontsize=8, ncol=2)
+
+    axes[1, 0].set_xlabel("Epoch")
+    axes[1, 1].set_xlabel("Epoch")
+    if title:
+        fig.suptitle(title, fontsize=12)
+
+    out_path.parent.mkdir(parents=True, exist_ok=True)
+    fig.savefig(out_path, dpi=150)
+    plt.close(fig)
+    print(f"Saved: {out_path.resolve()}")
+
+
+def plot_gate_distribution(
+    gate_ids_per_layer: list[torch.Tensor] | None,
+    title: str,
+    out_path: Path,
+) -> None:
+    if not gate_ids_per_layer:
+        print("Skip gate distribution figure (no gate ids found).")
+        return
+
+    n_layers = len(gate_ids_per_layer)
+    # For MNIST-small 6 layers, explicitly use 2x3 as requested.
+    if n_layers == 6:
+        nrows, ncols = 2, 3
+    else:
+        ncols = 3
+        nrows = math.ceil(n_layers / ncols)
+
+    fig, axes = plt.subplots(nrows, ncols, figsize=(4.8 * ncols, 3.6 * nrows), constrained_layout=True)
+    axes_list = axes.flatten() if isinstance(axes, (list, tuple)) or hasattr(axes, "flatten") else [axes]
+
+    for li, gids in enumerate(gate_ids_per_layer):
+        ax = axes_list[li]
+        counts = torch.bincount(gids, minlength=16).cpu().numpy()
+        ax.bar(range(16), counts, color=GATE_COLORS, edgecolor="black", linewidth=0.25)
+        ax.set_title(f"Layer {li + 1}")
+        ax.set_xticks(range(16))
+        ax.set_xticklabels(GATE_LABELS, rotation=90, fontsize=8)
+        ax.grid(True, axis="y", alpha=0.25)
+
+    for i in range(n_layers, len(axes_list)):
+        axes_list[i].axis("off")
+
+    if title:
+        fig.suptitle(title + " — gate distribution", fontsize=12)
+
+    out_path.parent.mkdir(parents=True, exist_ok=True)
+    fig.savefig(out_path, dpi=150)
+    plt.close(fig)
+    print(f"Saved: {out_path.resolve()}")
+
+
+def main() -> None:
+    ap = argparse.ArgumentParser(
+        description="Plot metrics from logs/run_*/train_log.csv and layer_stats.csv"
+    )
+    ap.add_argument(
+        "run",
+        type=Path,
+        help="Run directory (logs/run_*) or path to train_log.csv",
+    )
+    ap.add_argument(
+        "-o",
+        "--output-dir",
+        type=Path,
+        default=None,
+        help="Directory for PNGs (default: figures/)",
+    )
+    ap.add_argument("--title-prefix", type=str, default="", help="Optional prefix for figure titles")
+    args = ap.parse_args()
+
+    train_log_path, layer_stats_path, run_dir, run_name = resolve_run_paths(args.run)
+    data = load_train_log(train_log_path)
+    layer_data = load_layer_stats(layer_stats_path)
+    gate_ids_per_layer = load_gate_ids_per_layer(run_dir)
+
+    out_dir = (args.output_dir or Path("figures")).resolve()
+    out_dir.mkdir(parents=True, exist_ok=True)
+    prefix = run_name
+    title_base = (args.title_prefix.strip() + " " if args.title_prefix.strip() else "") + run_name
+
+    plot_train_val(data, title_base, out_dir / f"{prefix}_train_val.png")
+    plot_layer_diagnostics(layer_data, title_base + " — layer stats", out_dir / f"{prefix}_layers.png")
+    plot_gate_distribution(gate_ids_per_layer, title_base, out_dir / f"{prefix}_gates.png")
+
+
+if __name__ == "__main__":
+    main()

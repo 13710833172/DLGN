@@ -1,0 +1,36 @@
+model:
+  num_layers: 6
+  neurons_per_layer: 8000
+  input_dim: 784
+  num_classes: 10
+  gate_init: "normal"
+
+data:
+  dataset: "mnist"
+  binarize_threshold: 0.5
+  val_split: 5000
+  data_seed: 42
+  # train = 55000
+  # val = 5000
+  # test = 10000（官方测试集）
+
+training:
+  optimizer: "adam"
+  lr: 0.01
+  batch_size: 100
+  max_epochs: 200
+  device: "cuda"
+
+output:
+  tau: 10.0
+  beta: 0.0
+
+logging:
+  # 训练期间默认只记录 train/val；不在每个 epoch 跑 test（避免把测试集当验证用）
+  evaluate_test_during_training: false
+  log_soft_hard_consistency: true
+  consistency_interval: 10
+
+checkpoint:
+  save_dir: "checkpoints/paper_small"
+  seed: 0
