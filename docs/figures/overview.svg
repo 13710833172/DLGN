@@ -1,0 +1,87 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="400" viewBox="0 0 1200 400" role="img" aria-labelledby="desc">
+<desc id="desc">DLGN maps image embeddings through a fixed sparse graph of learned two-input gates to class-group sums. Soft training mixes sixteen operators; export selects one discrete operator per gate.</desc>
+<defs><marker id="arrow" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0 0 L8 4 L0 8 Z" fill="#586574"/></marker></defs>
+<rect width="1200" height="400" fill="white"/>
+<g font-family="Times New Roman, Times, serif" fill="#17212B">
+<text x="125" y="35" font-size="23" text-anchor="middle" font-weight="bold" fill="#17212B">Image embedding</text>
+<rect x="40" y="85" width="23" height="23" fill="#C4DDEB"/>
+<rect x="70" y="85" width="23" height="23" fill="#0072B2"/>
+<rect x="100" y="85" width="23" height="23" fill="#0072B2"/>
+<rect x="130" y="85" width="23" height="23" fill="#C4DDEB"/>
+<rect x="160" y="85" width="23" height="23" fill="#0072B2"/>
+<rect x="40" y="115" width="23" height="23" fill="#0072B2"/>
+<rect x="70" y="115" width="23" height="23" fill="#0072B2"/>
+<rect x="100" y="115" width="23" height="23" fill="#C4DDEB"/>
+<rect x="130" y="115" width="23" height="23" fill="#0072B2"/>
+<rect x="160" y="115" width="23" height="23" fill="#0072B2"/>
+<rect x="40" y="145" width="23" height="23" fill="#0072B2"/>
+<rect x="70" y="145" width="23" height="23" fill="#C4DDEB"/>
+<rect x="100" y="145" width="23" height="23" fill="#0072B2"/>
+<rect x="130" y="145" width="23" height="23" fill="#0072B2"/>
+<rect x="160" y="145" width="23" height="23" fill="#C4DDEB"/>
+<rect x="40" y="175" width="23" height="23" fill="#C4DDEB"/>
+<rect x="70" y="175" width="23" height="23" fill="#0072B2"/>
+<rect x="100" y="175" width="23" height="23" fill="#0072B2"/>
+<rect x="130" y="175" width="23" height="23" fill="#C4DDEB"/>
+<rect x="160" y="175" width="23" height="23" fill="#0072B2"/>
+<text x="110" y="241" font-size="19" text-anchor="middle" font-weight="normal" fill="#17212B">Flatten / thresholds</text>
+<line x1="194" y1="140" x2="274" y2="140" stroke="#586574" stroke-width="1.7" marker-end="url(#arrow)"/>
+<text x="500" y="35" font-size="23" text-anchor="middle" font-weight="bold" fill="#17212B">Fixed sparse logic graph</text>
+<line x1="298" y1="78" x2="440" y2="78" stroke="#586574" stroke-width="1.7"/>
+<line x1="298" y1="78" x2="440" y2="121" stroke="#586574" stroke-width="1.7"/>
+<line x1="298" y1="121" x2="440" y2="121" stroke="#586574" stroke-width="1.7"/>
+<line x1="298" y1="121" x2="440" y2="164" stroke="#586574" stroke-width="1.7"/>
+<line x1="298" y1="164" x2="440" y2="164" stroke="#586574" stroke-width="1.7"/>
+<line x1="298" y1="164" x2="440" y2="207" stroke="#586574" stroke-width="1.7"/>
+<line x1="298" y1="207" x2="440" y2="207" stroke="#586574" stroke-width="1.7"/>
+<line x1="298" y1="207" x2="440" y2="78" stroke="#586574" stroke-width="1.7"/>
+<line x1="468" y1="78" x2="610" y2="78" stroke="#586574" stroke-width="1.7"/>
+<line x1="468" y1="78" x2="610" y2="164" stroke="#586574" stroke-width="1.7"/>
+<line x1="468" y1="121" x2="610" y2="121" stroke="#586574" stroke-width="1.7"/>
+<line x1="468" y1="121" x2="610" y2="207" stroke="#586574" stroke-width="1.7"/>
+<line x1="468" y1="164" x2="610" y2="164" stroke="#586574" stroke-width="1.7"/>
+<line x1="468" y1="164" x2="610" y2="78" stroke="#586574" stroke-width="1.7"/>
+<line x1="468" y1="207" x2="610" y2="207" stroke="#586574" stroke-width="1.7"/>
+<line x1="468" y1="207" x2="610" y2="121" stroke="#586574" stroke-width="1.7"/>
+<circle cx="286" cy="78" r="10" fill="white" stroke="#0072B2" stroke-width="1.7"/>
+<circle cx="454" cy="78" r="14" fill="white" stroke="#0072B2" stroke-width="1.7"/>
+<text x="454" y="84" font-size="18" text-anchor="middle" font-weight="normal" fill="#17212B">g</text>
+<circle cx="624" cy="78" r="14" fill="white" stroke="#0072B2" stroke-width="1.7"/>
+<text x="624" y="84" font-size="18" text-anchor="middle" font-weight="normal" fill="#17212B">g</text>
+<circle cx="286" cy="121" r="10" fill="white" stroke="#0072B2" stroke-width="1.7"/>
+<circle cx="454" cy="121" r="14" fill="white" stroke="#0072B2" stroke-width="1.7"/>
+<text x="454" y="127" font-size="18" text-anchor="middle" font-weight="normal" fill="#17212B">g</text>
+<circle cx="624" cy="121" r="14" fill="white" stroke="#0072B2" stroke-width="1.7"/>
+<text x="624" y="127" font-size="18" text-anchor="middle" font-weight="normal" fill="#17212B">g</text>
+<circle cx="286" cy="164" r="10" fill="white" stroke="#0072B2" stroke-width="1.7"/>
+<circle cx="454" cy="164" r="14" fill="white" stroke="#0072B2" stroke-width="1.7"/>
+<text x="454" y="170" font-size="18" text-anchor="middle" font-weight="normal" fill="#17212B">g</text>
+<circle cx="624" cy="164" r="14" fill="white" stroke="#0072B2" stroke-width="1.7"/>
+<text x="624" y="170" font-size="18" text-anchor="middle" font-weight="normal" fill="#17212B">g</text>
+<circle cx="286" cy="207" r="10" fill="white" stroke="#0072B2" stroke-width="1.7"/>
+<circle cx="454" cy="207" r="14" fill="white" stroke="#0072B2" stroke-width="1.7"/>
+<text x="454" y="213" font-size="18" text-anchor="middle" font-weight="normal" fill="#17212B">g</text>
+<circle cx="624" cy="207" r="14" fill="white" stroke="#0072B2" stroke-width="1.7"/>
+<text x="624" y="213" font-size="18" text-anchor="middle" font-weight="normal" fill="#17212B">g</text>
+<text x="458" y="241" font-size="19" text-anchor="middle" font-weight="normal" fill="#17212B">Two inputs per gate</text>
+<line x1="654" y1="140" x2="762" y2="140" stroke="#586574" stroke-width="1.7" marker-end="url(#arrow)"/>
+<rect x="778" y="90" width="190" height="100" rx="4" fill="#EDF5FA" stroke="#0072B2" stroke-width="1.8"/>
+<text x="873.0" y="134.5" font-size="21" text-anchor="middle" font-weight="normal" fill="#17212B">Class-group</text>
+<text x="873.0" y="159.5" font-size="21" text-anchor="middle" font-weight="normal" fill="#17212B">sum</text>
+<line x1="968" y1="140" x2="1030" y2="140" stroke="#586574" stroke-width="1.7" marker-end="url(#arrow)"/>
+<text x="1102" y="35" font-size="23" text-anchor="middle" font-weight="bold" fill="#17212B">Class scores</text>
+<rect x="1046" y="172" width="21" height="28" fill="#0072B2"/>
+<rect x="1077" y="152" width="21" height="48" fill="#0072B2"/>
+<rect x="1108" y="117" width="21" height="83" fill="#0072B2"/>
+<rect x="1139" y="163" width="21" height="37" fill="#0072B2"/>
+<line x1="1036" y1="201" x2="1174" y2="201" stroke="#586574" stroke-width="1.7"/>
+<line x1="30" y1="270" x2="1170" y2="270" stroke="#D8DEE5" stroke-width="1.7"/>
+<rect x="55" y="302" width="285" height="64" rx="4" fill="#EDF5FA" stroke="#0072B2" stroke-width="1.8"/>
+<text x="197.5" y="341.0" font-size="21" text-anchor="middle" font-weight="normal" fill="#17212B">Soft: 16 operator weights</text>
+<line x1="340" y1="334" x2="495" y2="334" stroke="#586574" stroke-width="1.7" marker-end="url(#arrow)"/>
+<text x="417" y="316" font-size="20" text-anchor="middle" font-weight="normal" fill="#17212B">argmax</text>
+<rect x="510" y="302" width="285" height="64" rx="4" fill="#FFF4E5" stroke="#B86E00" stroke-width="1.8"/>
+<text x="652.5" y="341.0" font-size="21" text-anchor="middle" font-weight="normal" fill="#17212B">Hard: 1 operator per gate</text>
+<text x="1005" y="324" font-size="21" text-anchor="middle" font-weight="normal" fill="#17212B">Same input connections</text>
+<text x="1005" y="352" font-size="21" text-anchor="middle" font-weight="normal" fill="#17212B">Explicit operator identities</text>
+</g></svg>
