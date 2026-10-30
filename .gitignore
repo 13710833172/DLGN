@@ -9,7 +9,7 @@ venv/
 .env
 
 # Generated datasets, checkpoints, and run logs
-data/
+/data/
 checkpoints/
 logs/
 *.pt
