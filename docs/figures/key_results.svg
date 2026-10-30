@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1120" height="260" viewBox="0 0 1120 260" role="img" aria-labelledby="title desc">
+<title id="title">DLGN evaluation highlights</title><desc id="desc">Reported MNIST normal hard test accuracy 97.86 percent. CIFAR-10 large soft test accuracy 55.58 percent and hard 55.44 percent, a 0.14 percentage point conversion gap.</desc>
+<rect width="1120" height="260" fill="#ffffff"/>
+<rect x="18" y="18" width="526" height="222" rx="8" fill="#f1f6fa" stroke="#b4cbda"/>
+<rect x="576" y="18" width="526" height="222" rx="8" fill="#f1f6fa" stroke="#b4cbda"/>
+<g font-family="Arial, Helvetica, sans-serif" fill="#173042"><text x="44" y="55" font-size="21" font-weight="700">MNIST / normal</text><text x="44" y="87" font-size="16">Exported Boolean classifier · hard test accuracy</text><text x="44" y="169" font-size="72" font-weight="700" fill="#0067a2">97.86%</text><text x="603" y="55" font-size="21" font-weight="700">CIFAR-10 / large</text><text x="603" y="87" font-size="16">Same checkpoint · soft-to-hard conversion</text><text x="603" y="161" font-size="68" font-weight="700" fill="#0067a2">0.14 pp</text><text x="603" y="195" font-size="18">55.58% soft  →  55.44% hard</text><text x="44" y="212" font-size="14" fill="#526879">Single reported configuration</text><text x="603" y="219" font-size="14" fill="#526879">Absolute test-accuracy difference</text></g>
+</svg>
