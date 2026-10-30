@@ -2,7 +2,12 @@
 
 import torch
 import pytest
-from src.ops.logic_ops import compute_all_16_ops, build_truth_table, NUM_OPERATORS
+from src.ops.logic_ops import (
+    compute_all_16_ops,
+    build_truth_table,
+    hard_logic_lookup,
+    NUM_OPERATORS,
+)
 
 # Expected Boolean truth tables for all 16 operators, indexed [a][b].
 EXPECTED_TRUTH_TABLES = {
@@ -23,6 +28,26 @@ EXPECTED_TRUTH_TABLES = {
     14: [[1, 1], [1, 0]],  # NAND
     15: [[1, 1], [1, 1]],  # TRUE
 }
+
+
+@pytest.mark.parametrize(
+    "dtype",
+    [torch.float16, torch.float32, torch.float64, torch.int32, torch.int64, torch.bool],
+)
+def test_hard_lookup_accepts_binary_tensor_dtypes(dtype):
+    """Binary floats and booleans must be values, not tensor-index masks."""
+    pairs = [(0, 0), (0, 1), (1, 0), (1, 1)]
+    a = torch.tensor([av for av, _ in pairs], dtype=dtype)[:, None].expand(-1, NUM_OPERATORS)
+    b = torch.tensor([bv for _, bv in pairs], dtype=dtype)[:, None].expand(-1, NUM_OPERATORS)
+    expected = torch.tensor(
+        [[EXPECTED_TRUTH_TABLES[op][av][bv] for op in range(NUM_OPERATORS)] for av, bv in pairs],
+        dtype=torch.long,
+    )
+
+    actual = hard_logic_lookup(a, b, torch.arange(NUM_OPERATORS), build_truth_table())
+
+    assert actual.dtype == torch.long
+    assert torch.equal(actual, expected)
 
 
 class TestTruthTables:

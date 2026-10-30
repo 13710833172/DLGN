@@ -81,13 +81,17 @@ def hard_logic_lookup(
     """Vectorized batched truth-table lookup for hard logic.
     这个函数根据每个神经元的门编号(gate_ids)、输入 a/b(0 或 1)，在预先计算好的 truth_table 中查表，
     Args:
-        a: LongTensor [..., num_neurons], values in {0, 1}
-        b: LongTensor [..., num_neurons], values in {0, 1}
+        a: Tensor [..., num_neurons], binary values in {0, 1}
+        b: Tensor [..., num_neurons], binary values in {0, 1}
         gate_ids: LongTensor [num_neurons], values in {0..15}
         truth_table: LongTensor [16, 2, 2] 对应选哪个门, a和b分别可能是0或1
 
     Returns:
         LongTensor [..., num_neurons] with Boolean outputs.
     """
-    gids = gate_ids.expand_as(a) # 将 gate_ids 扩展为与 a 和 b 相同的形状, 即把每个神经元的 gate id，复制到 batch 维度上，有多少个batch，就有多少个相同的gate_ids, 对应多少个样本
-    return truth_table[gids, a, b] # 根据 gate_ids 索引 truth_table 中的结果
+    # Data loaders and intermediate hard layers represent binary values as floats.
+    # Convert to integer indices; bool tensors would otherwise act as index masks.
+    ai = a.long()
+    bi = b.long()
+    gids = gate_ids.expand_as(ai) # 将 gate_ids 扩展为与 a 和 b 相同的形状, 即把每个神经元的 gate id，复制到 batch 维度上，有多少个batch，就有多少个相同的gate_ids, 对应多少个样本
+    return truth_table[gids, ai, bi] # 根据 gate_ids 索引 truth_table 中的结果
