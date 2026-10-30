@@ -24,7 +24,17 @@ Boolean logic offers an interpretable, discrete computational representation for
 
 For inputs $a,b$, a differentiable gate uses the continuous extension $f_k$ of each of the 16 two-input Boolean functions:
 
-$$g_{\theta}(a,b)=\sum_{k=0}^{15}\mathrm{softmax}(\theta)_k f_k(a,b),\qquad k^*=\arg\max_k\theta_k.$$
+$
+p_k = \frac{e^{\theta_k}}{\sum_{j=0}^{15} e^{\theta_j}},
+\qquad
+g_{\theta}(a,b) = \sum_{k=0}^{15} p_k f_k(a,b).
+$
+
+$
+k^{*} = \arg\max_{0 \leq k \leq 15} \theta_k.
+$
+
+Here $p_k$ is the normalized weight of Boolean operator $f_k$; hard export selects the highest-logit operator $k^{*}$.
 
 **Architecture.** Each gate reads two fixed, seed-controlled inputs. Stacked [logic layers](src/models/logic_net.py) transform flattened or threshold-embedded images; the [class-group readout](src/utils/output_grouping.py) aggregates output units into class scores.
 
