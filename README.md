@@ -18,7 +18,7 @@ Boolean logic offers an interpretable, discrete computational representation for
 
 ## Methodology
 
-![DLGN architecture showing image encoding, sparse logic gates, operator training, and hard export.](docs/figures/overview.svg)
+![DLGN architecture showing image encoding, sparse logic gates, operator training, and hard export.](docs/figures/DLGN_overview_redesign.svg)
 
 *Figure 1. A fixed sparse graph is optimized through continuous operator mixtures. At export, the learned gate choice becomes one Boolean operator while the wiring and class-group aggregation are retained.*
 
