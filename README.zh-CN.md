@@ -24,7 +24,17 @@
 
 对于输入为 $a,b$ 的逻辑门，可微输出为：
 
-$$g(a,b)=\sum_{k=0}^{15}\operatorname{softmax}(\theta)_k f_k(a,b),\qquad k^*=\arg\max_k\theta_k.$$
+$
+p_k = \frac{e^{\theta_k}}{\sum_{j=0}^{15} e^{\theta_j}},
+\qquad
+g_{\theta}(a,b) = \sum_{k=0}^{15} p_k f_k(a,b).
+$
+
+$
+k^{*} = \arg\max_{0 \leq k \leq 15} \theta_k.
+$
+
+其中 $p_k$ 为布尔算子 $f_k$ 的归一化权重；离散导出时选择 logit 最大的算子 $k^{*}$。
 
 $f_k$ 表示双输入布尔运算的连续扩展。每个 soft 门有 16 个 logits，导出后保留运算编号与输入连接。图像经展平或阈值嵌入后进入稀疏逻辑层，再通过类别分组求和生成分类分数。对应实现见[逻辑层](src/models/logic_layer.py)、[布尔运算](src/ops/logic_ops.py)与[离散导出](src/discretize.py)。
 
