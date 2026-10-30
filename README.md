@@ -2,77 +2,84 @@
 
 **English** | [简体中文](README.zh-CN.md)
 
-**Learn with continuous gates. Execute with discrete logic.**
+**Train with differentiable operators. Export a discrete Boolean circuit.**
 
-An independent PyTorch implementation and reproduction study of [Deep Differentiable Logic Gate Networks](https://arxiv.org/abs/2210.08277). The contributions below describe this repository's implementation and evaluation scope; the underlying learning paradigm is attributed to the original work.
+A PyTorch research reproduction of [Deep Differentiable Logic Gate Networks (NeurIPS 2022)](https://arxiv.org/abs/2210.08277). This repository focuses on a transparent **soft-training → hard-logic** path and paired evaluation of the resulting classifier. The underlying differentiable-logic method belongs to the cited authors; see [method attribution](REFERENCE_NOTES.md).
 
 ## Abstract
 
-Learning a classifier built from Boolean operators requires a bridge between continuous optimization and discrete execution. DLGN implements that bridge with sparsely connected two-input gates: training optimizes a differentiable mixture over 16 Boolean operators, and export assigns one operator to each gate. This repository brings soft training, discrete export, and paired evaluation into a common PyTorch workflow. A representative MNIST model achieves **98.15% soft and 97.86% hard test accuracy**. On CIFAR-10, the reported large configuration reaches **55.44% hard accuracy**, with a **0.14 percentage-point** soft-to-hard difference. These paired results characterize the transfer from learned operator mixtures to executable discrete gates.
+Boolean logic offers an interpretable, discrete computational representation for classification, yet optimizing gate choices end to end requires differentiable training. This implementation builds a sparse classifier with fixed two-input wiring and trainable mixtures of the 16 Boolean operators, then exports the selected operator at every gate for hard inference. Crucially, training-time and exported predictions are evaluated on corresponding checkpoints. The reported MNIST configuration achieves **97.86% hard test accuracy**, while the CIFAR-10 large configuration reaches **55.44% hard test accuracy** with a **0.14 percentage-point soft-to-hard gap**. These results demonstrate the practical continuity from differentiable gate learning to discrete execution within a reproducible PyTorch workflow.
 
 ## Contributions
 
-- **An explicit train-to-logic path.** Fixed sparse connectivity and learnable operator logits connect gradient-based training to inspectable, discrete gate assignments.
-- **Paired evaluation of the exported model.** Soft and hard modes are reported together, so the deployed gate choices are assessed directly alongside their training-time relaxation.
-- **A modular research implementation.** Separate data embeddings, gate operators, network layers, training, evaluation, and export provide a foundation for [Conv-DLGN](https://github.com/13710833172/Conv-DLGN) and [Logic-SNN](https://github.com/13710833172/Logic-SNN).
+1. **A reproducible differentiable-to-discrete pipeline.** Fixed sparse connectivity, trainable Boolean operator logits, checkpoint selection, and exact argmax gate export are implemented as inspectable modules.
+2. **Paired soft/hard assessment.** Every reported comparison evaluates a soft classifier against its corresponding exported gate network, directly measuring conversion fidelity.
+3. **Reusable logic-gate components.** Dataset embeddings, operator evaluation, sparse layers, class-group readout, and hard inference form a compact starting point for spatial [Conv-DLGN](https://github.com/13710833172/Conv-DLGN) and temporal [Logic-SNN](https://github.com/13710833172/Logic-SNN) variants.
 
 ## Methodology
 
-![DLGN pipeline from image embedding through sparse logic gates to class scores, with soft training and discrete gate export.](docs/figures/overview.svg)
+![DLGN architecture showing image encoding, sparse logic gates, operator training, and hard export.](docs/figures/overview.svg)
 
-*Figure 1. A fixed graph learns operator choices. Soft optimization and hard execution share the connectivity; export replaces each operator mixture with its highest-logit Boolean operator.*
+*Figure 1. A fixed sparse graph is optimized through continuous operator mixtures. At export, the learned gate choice becomes one Boolean operator while the wiring and class-group aggregation are retained.*
 
-For a gate with inputs $a,b$, the differentiable output is
+For inputs $a,b$, a differentiable gate uses the continuous extension $f_k$ of each of the 16 two-input Boolean functions:
 
-$$g(a,b)=\sum_{k=0}^{15}\operatorname{softmax}(\theta)_k f_k(a,b),\qquad k^*=\arg\max_k\theta_k.$$
+$$g_{\theta}(a,b)=\sum_{k=0}^{15}\mathrm{softmax}(\theta)_k f_k(a,b),\qquad k^*=\arg\max_k\theta_k.$$
 
-Here $f_k$ is a continuous extension of a two-input Boolean operator. Each soft gate stores 16 logits; the exported gate stores an operator identity and its input connections. Images are flattened or embedded with thresholds, processed by sparse logic layers, and aggregated by class-group sums. See [gate layers](src/models/logic_layer.py), [Boolean operators](src/ops/logic_ops.py), and [hard export](src/discretize.py).
+**Architecture.** Each gate reads two fixed, seed-controlled inputs. Stacked [logic layers](src/models/logic_net.py) transform flattened or threshold-embedded images; the [class-group readout](src/utils/output_grouping.py) aggregates output units into class scores.
+
+**Optimization and export.** The [soft gate layer](src/models/logic_layer.py) learns 16 logits per gate using backpropagation. [Hard export](src/discretize.py) retains the stored connectivity and assigns operator $k^*$ to each gate. The [Boolean operator implementation](src/ops/logic_ops.py) is shared across the research workflow.
 
 ## Experiments
 
-**Question: does the learned classifier retain its accuracy when operator mixtures become discrete choices?** Table 1 pairs the two execution modes for each reported configuration.
+**Primary question: how closely does the exported Boolean classifier track the learned soft model?** The most informative comparison pairs soft and hard test accuracy on the *same* selected configuration.
 
-| Dataset / configuration | Soft test accuracy | Hard test accuracy | Soft − hard (pp) |
-| --- | ---: | ---: | ---: |
+![DLGN key evaluation highlights: 97.86% hard MNIST accuracy and 0.14 pp CIFAR-10 large soft-to-hard gap.](docs/figures/key_results.svg)
+
+*Figure 2. Two complementary indicators: classification accuracy of an exported MNIST model and conversion fidelity on a CIFAR-10 large configuration. Figures correspond to the rows in Table 1.*
+
+| Dataset / configuration | Soft accuracy ↑ | Hard accuracy ↑ | Soft − hard (pp) ↓ |
+|:--|--:|--:|--:|
 | MNIST / normal | 98.15% | **97.86%** | 0.29 |
 | CIFAR-10 / small | 48.80% | 47.91% | 0.89 |
 | CIFAR-10 / large | 55.58% | **55.44%** | **0.14** |
 
-*Table 1. Representative completed local configurations; pp denotes percentage points. Each row pairs soft evaluation and hard export of the same selected model. Rows have different configurations and training settings.*
+*Table 1. Reported single-run test observations from corresponding soft and exported checkpoints. Configuration and input protocol vary by row; this table assesses export within each model.*
 
-**Takeaway.** The MNIST result demonstrates classification with discrete gate choices at 97.86% accuracy. The CIFAR-10 large result provides a second example of close agreement between soft and hard execution, with a 0.14 pp difference. The table evaluates conversion within each model; it does not assign the differences between configurations to any single architectural factor.
+**Finding.** The CIFAR-10 large configuration retains **99.75% of its soft accuracy in relative terms** (55.44 / 55.58), corresponding to a **0.14 pp** absolute conversion difference. MNIST establishes a second high-accuracy hard-logic operating point at **97.86%**.
 
-**Protocol.** Checkpoints are selected by validation soft accuracy and then evaluated on the test split. Values summarize individual completed configurations, rather than an average across independent seeds. The MNIST loader uses continuous flattened pixels in training and thresholded pixels in validation/test; CIFAR-10 uses configuration-specific threshold embeddings. This input protocol is part of the implementation being evaluated. The reported measurements concern classification and conversion in PyTorch; hardware latency and energy are separate evaluation dimensions. Datasets, checkpoints, and raw experiment histories are maintained outside the repository.
+**Evaluation protocol.** The training pipeline selects checkpoints by validation soft accuracy and then evaluates soft/hard inference on the held-out test split. Reported entries are individual configurations. The MNIST implementation trains on continuous flattened pixels and evaluates thresholded pixels; CIFAR-10 employs configuration-specific threshold embeddings. See [data loaders](src/data/) and [configuration files](configs/) for the precise implemented paths. Accuracy values above are documented historical observations; the repository does not ship the corresponding raw run directories or pretrained weights.
 
-## Getting started
+## Reproduce the pipeline
 
-```bash
+~~~bash
 python3 -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
 
-# Full training configuration.
+# Train a complete configured run
 python src/train.py --config configs/mnist_normal_paper.yaml
-```
 
-The example starts a new run. Its outcome depends on the configuration and training environment; the table summarizes previously completed configurations. Use the generated checkpoint path for evaluation and export:
-
-```bash
+# Evaluate and discretize a checkpoint produced by that run
 python src/evaluate.py --checkpoint path/to/checkpoint.pt
 python src/discretize.py --checkpoint path/to/checkpoint.pt
+
+# Core logic/operator tests
 python -m pytest tests/test_logic_ops.py tests/test_connectivity.py tests/test_output_grouping.py -v
-```
+~~~
 
-## Repository guide
+The commands provide an executable path through model training, evaluation, and operator export. Local datasets and run artifacts are created or supplied separately.
 
-| Entry | Purpose |
-| --- | --- |
-| [src/data/](src/data/) | Dataset loading and embedding; downloaded datasets belong in root `/data/` |
-| [src/models/](src/models/), [src/ops/](src/ops/) | Soft/hard networks and Boolean operators |
-| [configs/](configs/) | MNIST and CIFAR-10 configurations |
-| [scripts/](scripts/) | Resource probes and plotting utilities |
-| [REFERENCE_NOTES.md](REFERENCE_NOTES.md) | Attribution and implementation scope |
+## Repository map
 
-## Conclusion
+| Location | Role |
+|:--|:--|
+| [src/models/](src/models/) · [src/ops/](src/ops/) | Soft and hard gate networks; Boolean operator algebra |
+| [src/data/](src/data/) | MNIST/CIFAR-10 loaders and encodings |
+| [configs/](configs/) | Architecture and training profiles |
+| [scripts/](scripts/) | Feasibility checks and figure generation |
+| [REFERENCE_NOTES.md](REFERENCE_NOTES.md) | Original-method attribution and reproduction scope |
 
-DLGN makes the transition from differentiable learning to discrete logic explicit: a fixed sparse graph, learned Boolean operator choices, and paired measurements of the resulting classifier.
+## Takeaway
+
+**A learned sparse logic classifier can be exported as explicit Boolean gate choices with directly measurable soft-to-hard agreement.** The CIFAR-10 large result illustrates this with a **0.14 pp** conversion difference.
