@@ -18,9 +18,13 @@ Boolean logic offers an interpretable, discrete computational representation for
 
 ## Methodology
 
-![DLGN architecture showing image encoding, sparse logic gates, operator training, and hard export.](docs/figures/DLGN_overview_redesign.svg)
+DLGN learns **which logic operator each node uses** while keeping its two input connections fixed.
 
-*Figure 1. A fixed sparse graph is optimized through continuous operator mixtures. At export, the learned gate choice becomes one Boolean operator while the wiring and class-group aggregation are retained.*
+![DLGN overview: soft-network training with backpropagation, per-node argmax export to an identically wired hard network, and all 16 logic operators.](docs/figures/DLGN_overview_redesign.svg)
+
+*Figure 1. DLGN training and inference. (a) Soft nodes learn mixtures of 16 real-valued logic operators through backpropagation. (b) Per-node argmax selects one Boolean operator for hard inference; wiring and class-group readout are preserved. (c) The complete operator library, its real-valued extensions, and truth bits in input order 00, 01, 10, 11. Network size and predictions are illustrative.*
+
+[View the full-size SVG](docs/figures/DLGN_overview_redesign.svg)
 
 For inputs $a,b$, a differentiable gate uses the continuous extension $f_k$ of each of the 16 two-input Boolean functions:
 

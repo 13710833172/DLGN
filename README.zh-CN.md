@@ -18,9 +18,13 @@
 
 ## 方法概述
 
-![DLGN 方法流程：图像嵌入、稀疏逻辑层与类别分组读出，以及 soft 训练到离散门导出的转换。](docs/figures/DLGN_overview_redesign.svg)
+DLGN 学习的是**每个节点使用哪种逻辑运算**；节点的两个输入连接在初始化后保持固定。
 
-*图 1：固定连接图上的运算选择学习。soft 优化与 hard 执行共享连接结构；导出时以最高 logit 对应的布尔运算替换运算混合。*
+![DLGN 方法概览：soft 网络的反向传播训练、保留相同连接的 argmax 离散导出与 hard 推理，以及全部 16 种逻辑算子。](docs/figures/DLGN_overview_redesign.svg)
+
+*图 1：DLGN 的训练与推理。(a) soft 节点通过反向传播学习 16 种实值逻辑算子的混合。(b) 对每个节点取 argmax，选择一种布尔算子进行 hard 推理，同时保留连接与类别分组读出。(c) 完整的算子库、实值扩展及按输入 00、01、10、11 排列的真值输出。图中的网络规模与预测结果均为示意。*
+
+[查看完整 SVG](docs/figures/DLGN_overview_redesign.svg)
 
 对于输入为 $a,b$ 的逻辑门，可微输出为：
 
